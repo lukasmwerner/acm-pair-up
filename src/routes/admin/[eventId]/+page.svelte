@@ -16,7 +16,17 @@
 		connectedCount: number;
 	};
 
+	type Pairing = {
+		id: string;
+		roundId: string;
+		aParticipantId: string;
+		bParticipantId: string;
+		isTrio?: boolean;
+		cParticipantId?: string | null;
+	};
+
 	let summary: Summary | null = null;
+	let pairings: Pairing[] = [];
 	let adminKey: string | null = null;
 	let disconnectSSE: (() => void) | null = null;
 	let loading = false;
@@ -39,6 +49,12 @@
 	async function fetchState(eventId: string) {
 		const res = await fetch(`/api/events/${eventId}/state`);
 		summary = await res.json();
+	}
+
+	async function fetchPairings(eventId: string) {
+		const res = await fetch(`/api/events/${eventId}/pairings/current`);
+		const data = await res.json();
+		pairings = data.pairings || [];
 	}
 
 	async function rematchConnected() {
@@ -69,12 +85,14 @@
 		const s = loadSession();
 		adminKey = s?.adminKey ?? null;
 		await fetchState(eventId);
+		await fetchPairings(eventId);
 		disconnectSSE = connectSSE(eventId, async (msg) => {
 			if (
 				msg?.type === "presence:update" ||
 				msg?.type === "pairings:updated"
 			) {
 				await fetchState(eventId);
+				await fetchPairings(eventId);
 			}
 		});
 	});
@@ -111,10 +129,42 @@
 			</div>
 		</section>
 
-
-
-
 		<section class="bg-white rounded-lg shadow p-6 md:col-span-2">
+			<h2 class="font-semibold mb-3">Current Pairings</h2>
+			{#if pairings.length > 0}
+				<ul class="space-y-2">
+					{#each pairings as pair}
+						{@const participantA = summary.participants.find(p => p.id === pair.aParticipantId)}
+						{@const participantB = summary.participants.find(p => p.id === pair.bParticipantId)}
+						{@const participantC = pair.cParticipantId ? summary.participants.find(p => p.id === pair.cParticipantId) : null}
+						{#if participantA && participantB}
+							<li class="flex items-center gap-3 py-2">
+								<span class="text-2xl">{participantA.emojiId}</span>
+								{#if participantA.displayName}
+									<span class="text-sm text-slate-600">{participantA.displayName}</span>
+								{/if}
+								<span class="text-slate-400">→</span>
+								<span class="text-2xl">{participantB.emojiId}</span>
+								{#if participantB.displayName}
+									<span class="text-sm text-slate-600">{participantB.displayName}</span>
+								{/if}
+								{#if pair.isTrio && participantC}
+									<span class="text-slate-400">→</span>
+									<span class="text-2xl">{participantC.emojiId}</span>
+									{#if participantC.displayName}
+										<span class="text-sm text-slate-600">{participantC.displayName}</span>
+									{/if}
+								{/if}
+							</li>
+						{/if}
+					{/each}
+				</ul>
+			{:else}
+				<p class="text-slate-500 text-sm">No pairings yet. Click "Rematch Connected" to create pairings.</p>
+			{/if}
+		</section>
+
+		<section class="bg-white rounded-lg shadow p-6 md:col-span-3">
 			<h2 class="font-semibold mb-3">Participants</h2>
 			<ul class="divide-y">
 				{#each summary.participants as p}
