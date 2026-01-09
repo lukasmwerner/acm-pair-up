@@ -7,7 +7,8 @@
 		event: { id: string; name: string; code: string };
 		participants: Array<{
 			id: string;
-			hexId: string;
+			emojiId: string;
+			emojiName: string;
 			displayName?: string;
 			presence?: { connected: boolean; lastSeenAt?: number };
 		}>;
@@ -125,9 +126,9 @@
 									? 'bg-emerald-500'
 									: 'bg-slate-300'}"
 							></span>
-							<span class="font-mono text-lg">{p.hexId}</span>
+							<span class="text-2xl">{p.emojiId}</span>
 							{#if p.displayName}
-								<span class="text-slate-600"
+								<span class="text-slate-700"
 									>{p.displayName}</span
 								>
 							{/if}

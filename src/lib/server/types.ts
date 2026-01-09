@@ -23,7 +23,8 @@ export interface EventSettings {
 export interface Participant {
   id: ID;
   eventId: ID;
-  hexId: string; // short hex like 'A3'
+  emojiId: string; // emoji character like '🐶'
+  emojiName: string; // emoji name like 'Dog'
   displayName?: string;
   token: string; // participant token for presence/auth
   createdAt: number;

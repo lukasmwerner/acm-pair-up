@@ -13,8 +13,12 @@ export function fnv1a32(x: number): number {
   return h >>> 0;
 }
 
-export function parseHex(hex: string): number {
-  return parseInt(hex, 16) >>> 0;
+export function hashEmoji(emoji: string): number {
+  let hash = 0;
+  for (let i = 0; i < emoji.length; i++) {
+    hash = emoji.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return hash >>> 0;
 }
 
 function attemptPair(
@@ -25,7 +29,7 @@ function attemptPair(
   window: number
 ): { pairs: [Participant, Participant][], waiting?: Participant } | null {
   const ranks = connected
-    .map(p => ({ p, r: fnv1a32((parseHex(p.hexId) ^ roundSeed) >>> 0) }))
+    .map(p => ({ p, r: fnv1a32((hashEmoji(p.emojiId) ^ roundSeed) >>> 0) }))
     .sort((a, b) => a.r - b.r);
 
   const pairs: [Participant, Participant][] = [];

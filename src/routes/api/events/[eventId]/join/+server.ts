@@ -11,7 +11,7 @@ export const POST: RequestHandler = async ({ params, request }) => {
   const displayName = body?.displayName ? String(body.displayName) : undefined;
   try {
     const { participant, token } = joinEvent(event.id, code, displayName);
-    return json({ participantToken: token, hexId: participant.hexId, participantId: participant.id });
+    return json({ participantToken: token, emojiId: participant.emojiId, emojiName: participant.emojiName, participantId: participant.id });
   } catch (e: any) {
     throw error(400, e?.message ?? 'Join failed');
   }

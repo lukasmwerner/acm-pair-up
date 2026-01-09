@@ -11,7 +11,8 @@
 		event: { id: string; name: string; code: string };
 		participants: Array<{
 			id: string;
-			hexId: string;
+			emojiId: string;
+			emojiName: string;
 			displayName?: string;
 			presence?: { connected: boolean };
 		}>;
@@ -20,22 +21,23 @@
 	};
 
 	let summary: Summary | null = null;
-	let partner: { hexId: string; displayName?: string } | null = null;
-	let my = { id: "", hexId: "", token: "" };
+	let partner: { emojiId: string; emojiName: string; displayName?: string } | null = null;
+	let my = { id: "", emojiId: "", emojiName: "", token: "" };
 	let cleanupHeartbeat: (() => void) | null = null;
 	let disconnectSSE: (() => void) | null = null;
 
-	function bgFromHex(hex: string) {
-		// Map hex (base16) to hue; keep soft saturation/lightness for readability
-		let val = 0;
-		try {
-			val = parseInt(hex, 16) % 360;
-		} catch {}
-		return `hsl(${val}, 70%, 90%)`;
+	function bgFromEmoji(emoji: string) {
+		// Generate consistent hue from emoji code point
+		let hash = 0;
+		for (let i = 0; i < emoji.length; i++) {
+			hash = emoji.charCodeAt(i) + ((hash << 5) - hash);
+		}
+		const hue = Math.abs(hash) % 360;
+		return `hsl(${hue}, 70%, 90%)`;
 	}
 
 	let partnerBg = "transparent";
-	$: partnerBg = partner ? bgFromHex(partner.hexId) : "transparent";
+	$: partnerBg = partner ? bgFromEmoji(partner.emojiId) : "transparent";
 
 	async function fetchState(eventId: string) {
 		const res = await fetch(`/api/events/${eventId}/state`);
@@ -56,7 +58,8 @@
 					);
 					if (other)
 						partner = {
-							hexId: other.hexId,
+							emojiId: other.emojiId,
+							emojiName: other.emojiName,
 							displayName: other.displayName,
 						};
 				}
@@ -66,7 +69,8 @@
 					);
 					if (other)
 						partner = {
-							hexId: other.hexId,
+							emojiId: other.emojiId,
+							emojiName: other.emojiName,
 							displayName: other.displayName,
 						};
 				}
@@ -83,7 +87,8 @@
 			return;
 		}
 		my.id = s.participantId ?? "";
-		my.hexId = s.hexId ?? "";
+		my.emojiId = s.emojiId ?? "";
+		my.emojiName = s.emojiName ?? "";
 		my.token = s.participantToken ?? "";
 		await fetchState(eventId);
 		await fetchPairings(eventId);
@@ -106,12 +111,10 @@
 </script>
 
 {#if summary}
-	<!-- Top overlay: self hex -->
+	<!-- Top overlay: self emoji -->
 	<div class="fixed top-3 inset-x-0 z-20 flex justify-center">
-		<div class="rounded-full bg-white/80 px-4 py-1 shadow">
-			<span class="font-mono text-2xl text-slate-800"
-				>Your ID: {my.hexId}</span
-			>
+		<div class="rounded-full bg-white/80 px-4 py-2 shadow">
+			<div class="text-4xl">{my.emojiId}</div>
 		</div>
 	</div>
 
@@ -122,13 +125,11 @@
 	>
 		{#if partner}
 			<div class="text-center">
-				<div
-					class="font-mono text-[14vw] leading-none md:text-[10rem] text-slate-900"
-				>
-					{partner.hexId}
+				<div class="text-[20vw] leading-none md:text-[15rem]">
+					{partner.emojiId}
 				</div>
 				{#if partner.displayName}
-					<div class="mt-2 text-slate-700 text-xl">
+					<div class="mt-6 text-slate-800 text-3xl font-semibold">
 						{partner.displayName}
 					</div>
 				{/if}

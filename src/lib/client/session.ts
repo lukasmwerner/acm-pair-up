@@ -2,7 +2,8 @@ export type Session = {
   eventId: string;
   participantToken?: string;
   participantId?: string;
-  hexId?: string;
+  emojiId?: string;
+  emojiName?: string;
   adminKey?: string;
 };
 
