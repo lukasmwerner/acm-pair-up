@@ -31,10 +31,24 @@
 	let disconnectSSE: (() => void) | null = null;
 	let loading = false;
 	let joinUrl = '';
+	let currentTime = Date.now(); // For reactive last-seen updates
 
 	$: joinUrl = summary && typeof window !== 'undefined'
 		? `${location.origin}/join?e=${encodeURIComponent(summary.event.id)}&code=${encodeURIComponent(summary.event.code)}`
 		: '';
+
+	$: connectedParticipants = summary?.participants.filter(p => p.presence?.connected) || [];
+	$: disconnectedParticipants = summary?.participants.filter(p => !p.presence?.connected) || [];
+
+	function formatLastSeen(lastSeenAt?: number): string {
+		if (!lastSeenAt) return 'never';
+		const seconds = Math.floor((currentTime - lastSeenAt) / 1000);
+		if (seconds < 60) return `${seconds}s ago`;
+		const minutes = Math.floor(seconds / 60);
+		if (minutes < 60) return `${minutes}m ago`;
+		const hours = Math.floor(minutes / 60);
+		return `${hours}h ago`;
+	}
 
 	async function copyJoinLink() {
 		if (!joinUrl) return;
@@ -95,6 +109,15 @@
 				await fetchPairings(eventId);
 			}
 		});
+
+		// Update currentTime every second for live "last seen" updates
+		const timeInterval = setInterval(() => {
+			currentTime = Date.now();
+		}, 1000);
+
+		return () => {
+			clearInterval(timeInterval);
+		};
 	});
 
 	onDestroy(() => disconnectSSE?.());
@@ -143,13 +166,13 @@
 								{#if participantA.displayName}
 									<span class="text-sm text-slate-600">{participantA.displayName}</span>
 								{/if}
-								<span class="text-slate-400">→</span>
+								<span class="text-slate-400">↔</span>
 								<span class="text-2xl">{participantB.emojiId}</span>
 								{#if participantB.displayName}
 									<span class="text-sm text-slate-600">{participantB.displayName}</span>
 								{/if}
 								{#if pair.isTrio && participantC}
-									<span class="text-slate-400">→</span>
+									<span class="text-slate-400">↔</span>
 									<span class="text-2xl">{participantC.emojiId}</span>
 									{#if participantC.displayName}
 										<span class="text-sm text-slate-600">{participantC.displayName}</span>
@@ -166,29 +189,54 @@
 
 		<section class="bg-white rounded-lg shadow p-6 md:col-span-3">
 			<h2 class="font-semibold mb-3">Participants</h2>
-			<ul class="divide-y">
-				{#each summary.participants as p}
-					<li class="flex items-center justify-between py-2">
-						<div class="flex items-center gap-3">
-							<span
-								class="inline-block h-2 w-2 rounded-full {p
-									.presence?.connected
-									? 'bg-emerald-500'
-									: 'bg-slate-300'}"
-							></span>
-							<span class="text-2xl">{p.emojiId}</span>
-							{#if p.displayName}
-								<span class="text-slate-700"
-									>{p.displayName}</span
-								>
-							{/if}
-						</div>
-						<div class="text-sm text-slate-500">
-							{p.presence?.connected ? "connected" : "away"}
-						</div>
-					</li>
-				{/each}
-			</ul>
+
+			{#if connectedParticipants.length > 0}
+				<div class="mb-4">
+					<h3 class="text-sm font-medium text-emerald-700 mb-2">Connected ({connectedParticipants.length})</h3>
+					<ul class="divide-y">
+						{#each connectedParticipants as p}
+							<li class="flex items-center justify-between py-2">
+								<div class="flex items-center gap-3">
+									<span class="inline-block h-2 w-2 rounded-full bg-emerald-500"></span>
+									<span class="text-2xl">{p.emojiId}</span>
+									{#if p.displayName}
+										<span class="text-slate-700">{p.displayName}</span>
+									{/if}
+								</div>
+								<div class="text-sm text-emerald-600 font-medium">
+									online
+								</div>
+							</li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
+
+			{#if disconnectedParticipants.length > 0}
+				<div>
+					<h3 class="text-sm font-medium text-slate-500 mb-2">Disconnected ({disconnectedParticipants.length})</h3>
+					<ul class="divide-y divide-slate-200">
+						{#each disconnectedParticipants as p}
+							<li class="flex items-center justify-between py-2 opacity-50">
+								<div class="flex items-center gap-3">
+									<span class="inline-block h-2 w-2 rounded-full bg-slate-300"></span>
+									<span class="text-2xl grayscale">{p.emojiId}</span>
+									{#if p.displayName}
+										<span class="text-slate-500">{p.displayName}</span>
+									{/if}
+								</div>
+								<div class="text-sm text-slate-400">
+									{formatLastSeen(p.presence?.lastSeenAt)}
+								</div>
+							</li>
+						{/each}
+					</ul>
+				</div>
+			{/if}
+
+			{#if connectedParticipants.length === 0 && disconnectedParticipants.length === 0}
+				<p class="text-slate-500 text-sm">No participants yet.</p>
+			{/if}
 		</section>
 	</div>
 {:else}
