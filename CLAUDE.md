@@ -79,8 +79,10 @@ The core matching logic (`src/lib/server/pairing.ts`) implements deterministic e
 
 ### Presence Detection
 - `connected` flag updated via heartbeat POST every 10s
-- No automatic disconnect timeout implemented (relies on heartbeat updates)
+- Client sends DELETE on page close (`beforeunload` event)
+- Server-side timeout: Auto-disconnects after 30s without heartbeat (checked every 15s)
 - Admin dashboard shows real-time presence via SSE updates
+- Reconnection is automatic: First heartbeat after disconnect sets `connected: true`
 
 ### Idempotency
 - `rematch-connected` endpoint rejects requests within 1s of previous rematch
@@ -99,6 +101,7 @@ Key types in `src/lib/server/types.ts`:
 - `src/routes/` - File-based routing
 - `+page.svelte` - Page components
 - `+server.ts` - API endpoints
+- `src/hooks.server.ts` - Server initialization, runs presence timeout detector
 - Path aliases: `$lib` → `src/lib`
 
 ## Development Notes
@@ -107,4 +110,4 @@ Key types in `src/lib/server/types.ts`:
 - No tests exist yet
 - No persistent database (all in-memory)
 - Production deployment uses `@sveltejs/adapter-node` (see `Dockerfile`)
-- Presence heartbeats run client-side every 10s; disconnection detection is passive
+- Presence heartbeats run client-side every 10s; server actively times out stale connections after 30s

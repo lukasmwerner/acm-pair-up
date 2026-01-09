@@ -78,6 +78,19 @@
 		}
 	}
 
+	async function disconnect() {
+		if (!my.token) return;
+		try {
+			await fetch(`/api/events/${$page.params.eventId}/presence`, {
+				method: 'DELETE',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ participantToken: my.token })
+			});
+		} catch {
+			// Best effort - server timeout will catch it anyway
+		}
+	}
+
 	onMount(async () => {
 		const eventId = $page.params.eventId;
 		const s = loadSession();
@@ -102,11 +115,19 @@
 				await fetchPairings(eventId);
 			}
 		});
+
+		// Immediate disconnect on page close
+		window.addEventListener('beforeunload', disconnect);
 	});
 
 	onDestroy(() => {
 		cleanupHeartbeat?.();
 		disconnectSSE?.();
+		if (typeof window !== 'undefined') {
+			window.removeEventListener('beforeunload', disconnect);
+		}
+		// Also disconnect on component unmount
+		disconnect();
 	});
 </script>
 
