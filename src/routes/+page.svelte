@@ -17,6 +17,10 @@
 	});
 </script>
 
+<svelte:head>
+	<title>ACM Pair Up - Speed Friending Made Easy</title>
+</svelte:head>
+
 <div class="fixed inset-0 overflow-hidden bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
 	<!-- Floating emojis background -->
 	{#each floatingEmojis as emoji}

@@ -12,6 +12,7 @@
 	let joining = false;
 	let formCode = '';
 	let formName = '';
+	let pageTitle = 'Join Event - ACM Pair Up';
 
 	async function handleJoin(eventId: string, code: string, displayName: string) {
 		joining = true;
@@ -57,10 +58,18 @@
 			return;
 		}
 		joinUrl = `${location.origin}/join?e=${encodeURIComponent(eventId)}&code=${encodeURIComponent(code)}${displayName ? `&name=${encodeURIComponent(displayName)}` : ''}`;
-		if (qr) { qrMode = true; return; }
+		if (qr) {
+			qrMode = true;
+			pageTitle = 'Scan to Join - ACM Pair Up';
+			return;
+		}
 		await handleJoin(eventId, code, displayName);
 	});
 </script>
+
+<svelte:head>
+	<title>{pageTitle}</title>
+</svelte:head>
 
 <div class="fixed inset-0 overflow-hidden bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
 	<!-- Floating emojis background -->

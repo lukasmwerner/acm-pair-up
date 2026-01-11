@@ -30,17 +30,20 @@
 	let adminKey: string | null = null;
 	let disconnectSSE: (() => void) | null = null;
 	let loading = false;
-	let joinUrl = '';
-	let currentTime = Date.now(); // For reactive last-seen updates
+	let joinUrl = "";
+	let currentTime = Date.now();
 	let lastRematchTime = 0;
-	let rematchCooldown = 0; // Milliseconds remaining
+	let rematchCooldown = 0;
 
 	// Toast notification state
-	let toastMessage = '';
-	let toastType: 'success' | 'error' | 'warning' = 'success';
+	let toastMessage = "";
+	let toastType: "success" | "error" | "warning" = "success";
 	let toastVisible = false;
 
-	function showToast(message: string, type: 'success' | 'error' | 'warning' = 'success') {
+	function showToast(
+		message: string,
+		type: "success" | "error" | "warning" = "success",
+	) {
 		toastMessage = message;
 		toastType = type;
 		toastVisible = true;
@@ -49,15 +52,18 @@
 		}, 3000);
 	}
 
-	$: joinUrl = summary && typeof window !== 'undefined'
-		? `${location.origin}/join?e=${encodeURIComponent(summary.event.id)}&code=${encodeURIComponent(summary.event.code)}`
-		: '';
+	$: joinUrl =
+		summary && typeof window !== "undefined"
+			? `${location.origin}/join?e=${encodeURIComponent(summary.event.id)}&code=${encodeURIComponent(summary.event.code)}`
+			: "";
 
-	$: connectedParticipants = summary?.participants.filter(p => p.presence?.connected) || [];
-	$: disconnectedParticipants = summary?.participants.filter(p => !p.presence?.connected) || [];
+	$: connectedParticipants =
+		summary?.participants.filter((p) => p.presence?.connected) || [];
+	$: disconnectedParticipants =
+		summary?.participants.filter((p) => !p.presence?.connected) || [];
 
 	function formatLastSeen(lastSeenAt?: number): string {
-		if (!lastSeenAt) return 'never';
+		if (!lastSeenAt) return "never";
 		const seconds = Math.floor((currentTime - lastSeenAt) / 1000);
 		if (seconds < 60) return `${seconds}s ago`;
 		const minutes = Math.floor(seconds / 60);
@@ -70,10 +76,10 @@
 		if (!joinUrl) return;
 		try {
 			await navigator.clipboard.writeText(joinUrl);
-			showToast('Join link copied to clipboard!', 'success');
+			showToast("Join link copied!", "success");
 		} catch (e) {
-			console.error('Copy failed', e);
-			showToast('Failed to copy link', 'error');
+			console.error("Copy failed", e);
+			showToast("Failed to copy link", "error");
 		}
 	}
 
@@ -95,7 +101,6 @@
 			return;
 		}
 
-		// Client-side cooldown check
 		const now = Date.now();
 		const timeSinceLastRematch = now - lastRematchTime;
 		if (lastRematchTime > 0 && timeSinceLastRematch < 1000) {
@@ -122,16 +127,17 @@
 
 		const data = await res.json();
 		if (data.skipped) {
-			// Server rejected due to idempotency - start cooldown animation
 			const timeToWait = 1000 - (Date.now() - lastRematchTime);
 			rematchCooldown = Math.max(0, timeToWait);
 			showToast("Too fast! Please wait 1 second", "warning");
 			return;
 		}
 
-		// Success - update last rematch time and show success
 		lastRematchTime = Date.now();
-		showToast(`Created ${data.pairings?.length || 0} new pairings!`, "success");
+		showToast(
+			`Created ${data.pairings?.length || 0} new pairings!`,
+			"success",
+		);
 	}
 
 	onMount(async () => {
@@ -150,12 +156,10 @@
 			}
 		});
 
-		// Update currentTime every second for live "last seen" updates
 		const timeInterval = setInterval(() => {
 			currentTime = Date.now();
 		}, 1000);
 
-		// Cooldown countdown timer - recalculate from lastRematchTime for accuracy
 		const cooldownInterval = setInterval(() => {
 			if (lastRematchTime > 0) {
 				const elapsed = Date.now() - lastRematchTime;
@@ -173,141 +177,322 @@
 	onDestroy(() => disconnectSSE?.());
 </script>
 
-{#if summary}
-	<header class="mb-6 flex items-center justify-between">
-		<h1 class="text-2xl font-semibold">Admin — {summary.event.name}</h1>
-		<div class="text-slate-600">
-			Code: <strong>{summary.event.code}</strong>
-		</div>
-	</header>
-	<div class="grid gap-6 md:grid-cols-3">
-		<section class="bg-white rounded-lg shadow p-6">
-			<h2 class="font-semibold mb-3">Controls</h2>
-			<div class="space-y-3">
+<svelte:head>
+	<title>{summary?.event.name || "Admin"} - ACM Pair Up</title>
+</svelte:head>
+
+<div
+	class="fixed inset-0 overflow-hidden bg-gradient-to-br from-slate-100 via-indigo-50 to-purple-100"
+>
+	<div class="relative z-10 min-h-screen p-4 md:p-6 overflow-y-auto">
+		{#if summary}
+			<!-- Header -->
+			<header
+				class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+			>
 				<div>
-					<label class="block text-sm text-slate-600 mb-1">Join link</label>
-					<div class="flex items-center gap-2">
-						<input class="w-full rounded border border-slate-300 px-3 py-2 text-sm" readonly value={joinUrl} />
-						<button class="rounded bg-slate-800 text-white px-3 py-2 text-sm hover:bg-slate-900" on:click={copyJoinLink}>Copy</button>
-						<a class="rounded bg-emerald-600 text-white px-3 py-2 text-sm hover:bg-emerald-700" target="_blank" rel="noreferrer" href={joinUrl}>Open</a>
-						<a class="rounded bg-indigo-600 text-white px-3 py-2 text-sm hover:bg-indigo-700" target="_blank" rel="noreferrer" href={`${joinUrl}&qr=1`}>QR</a>
+					<h1 class="text-2xl md:text-3xl font-bold text-slate-800">
+						{summary.event.name}
+					</h1>
+					<p class="text-slate-600">Admin Dashboard</p>
+				</div>
+				<div class="flex items-center gap-3">
+					<div
+						class="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full text-sm text-slate-600 shadow-sm"
+					>
+						Code: <strong class="text-indigo-700"
+							>{summary.event.code}</strong
+						>
+					</div>
+					<div
+						class="px-4 py-2 bg-emerald-100/80 backdrop-blur-sm rounded-full text-sm text-emerald-700 shadow-sm"
+					>
+						{summary.connectedCount} online
 					</div>
 				</div>
-				<div>
-					<button
-						class="inline-flex items-center justify-center gap-2 rounded bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all relative overflow-hidden min-w-[180px]"
-						disabled={loading || rematchCooldown > 0}
-						on:click={rematchConnected}>
-						<span class="relative z-10">
-							{#if rematchCooldown > 0}
-								Wait {Math.ceil(rematchCooldown / 1000)}s
-							{:else if loading}
-								Creating pairs...
-							{:else}
-								Rematch Connected
-							{/if}
-						</span>
-						{#if rematchCooldown > 0}
-							<div class="absolute inset-0 bg-indigo-800 transition-all" style="width: {100 - (rematchCooldown / 10)}%"></div>
-						{/if}
-					</button>
-				</div>
-			</div>
-		</section>
+			</header>
 
-		<section class="bg-white rounded-lg shadow p-6 md:col-span-2">
-			<h2 class="font-semibold mb-3">Current Pairings</h2>
-			{#if pairings.length > 0}
-				<div class="flex flex-wrap gap-3">
-					{#each pairings as pair}
-						{@const participantA = summary.participants.find(p => p.id === pair.aParticipantId)}
-						{@const participantB = summary.participants.find(p => p.id === pair.bParticipantId)}
-						{@const participantC = pair.cParticipantId ? summary.participants.find(p => p.id === pair.cParticipantId) : null}
-						{#if participantA && participantB}
-							<div class="flex items-center gap-2 bg-indigo-50 rounded-full px-4 py-2 border border-indigo-200">
-								<span class="text-2xl">{participantA.emojiId}</span>
-								<span class="text-indigo-400 text-sm">↔</span>
-								<span class="text-2xl">{participantB.emojiId}</span>
-								{#if pair.isTrio && participantC}
-									<span class="text-indigo-400 text-sm">↔</span>
-									<span class="text-2xl">{participantC.emojiId}</span>
-								{/if}
+			<div class="grid gap-4 md:gap-6 lg:grid-cols-3">
+				<!-- Controls Section -->
+				<section
+					class="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg p-6"
+				>
+					<h2
+						class="font-semibold text-slate-800 mb-4 flex items-center gap-2"
+					>
+						<span class="text-xl">🎛️</span> Controls
+					</h2>
+					<div class="space-y-4">
+						<div>
+							<label
+								for="join-link"
+								class="block text-sm font-medium text-slate-700 mb-2"
+								>Join Link</label
+							>
+							<div class="flex items-center gap-2">
+								<input
+									id="join-link"
+									class="flex-1 px-3 py-2 border border-slate-200 rounded-xl bg-white/50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+									readonly
+									value={joinUrl}
+								/>
+								<button
+									class="px-3 py-2 bg-slate-800 text-white text-sm font-medium rounded-xl hover:bg-slate-900 transition-all"
+									on:click={copyJoinLink}
+								>
+									Copy
+								</button>
 							</div>
+						</div>
+
+						<div class="flex gap-2">
+							<a
+								class="flex-1 px-3 py-2 bg-emerald-600 text-white text-sm font-medium rounded-xl text-center hover:bg-emerald-700 transition-all"
+								target="_blank"
+								rel="noreferrer"
+								href={joinUrl}
+							>
+								Open
+							</a>
+							<a
+								class="flex-1 px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl text-center hover:bg-indigo-700 transition-all"
+								target="_blank"
+								rel="noreferrer"
+								href={`${joinUrl}&qr=1`}
+							>
+								QR Code
+							</a>
+						</div>
+
+						<button
+							class="w-full px-4 py-3 bg-purple-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 relative overflow-hidden"
+							disabled={loading || rematchCooldown > 0}
+							on:click={rematchConnected}
+						>
+							<span class="relative z-10">
+								{#if rematchCooldown > 0}
+									Wait {Math.ceil(rematchCooldown / 1000)}s
+								{:else if loading}
+									Creating pairs...
+								{:else}
+									Rematch Connected
+								{/if}
+							</span>
+							{#if rematchCooldown > 0}
+								<div
+									class="absolute inset-0 bg-indigo-800/50 transition-all"
+									style="width: {100 - rematchCooldown / 10}%"
+								></div>
+							{/if}
+						</button>
+					</div>
+				</section>
+
+				<!-- Current Pairings Section -->
+				<section
+					class="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg p-6 lg:col-span-2"
+				>
+					<h2
+						class="font-semibold text-slate-800 mb-4 flex items-center gap-2"
+					>
+						<span class="text-xl">🔗</span> Current Pairings
+						{#if summary.round}
+							<span class="text-sm font-normal text-slate-500"
+								>Round {summary.round.index + 1}</span
+							>
 						{/if}
-					{/each}
-				</div>
-			{:else}
-				<p class="text-slate-500 text-sm">No pairings yet. Click "Rematch Connected" to create pairings.</p>
-			{/if}
-		</section>
-
-		<section class="bg-white rounded-lg shadow p-6 md:col-span-3">
-			<h2 class="font-semibold mb-4">Participants</h2>
-
-			{#if connectedParticipants.length > 0}
-				<div class="mb-6">
-					<h3 class="text-sm font-medium text-emerald-700 mb-3">Connected ({connectedParticipants.length})</h3>
-					<div class="flex flex-wrap gap-3">
-						{#each connectedParticipants as p}
-							<div class="relative group">
-								<div class="flex flex-col items-center justify-center w-20 h-20 bg-emerald-100 rounded-2xl border-2 border-emerald-400 hover:border-emerald-500 transition-colors">
-									<span class="text-4xl">{p.emojiId}</span>
-								</div>
-								{#if p.displayName}
-									<div class="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity bg-white px-2 py-1 rounded shadow-sm">
-										{p.displayName}
+					</h2>
+					{#if pairings.length > 0}
+						<div class="flex flex-wrap gap-3">
+							{#each pairings as pair}
+								{@const participantA =
+									summary.participants.find(
+										(p) => p.id === pair.aParticipantId,
+									)}
+								{@const participantB =
+									summary.participants.find(
+										(p) => p.id === pair.bParticipantId,
+									)}
+								{@const participantC = pair.cParticipantId
+									? summary.participants.find(
+											(p) => p.id === pair.cParticipantId,
+										)
+									: null}
+								{#if participantA && participantB}
+									<div
+										class="flex items-center gap-2 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-full px-4 py-2 border border-indigo-200/50 shadow-sm"
+									>
+										<span
+											class="text-2xl"
+											title={participantA.displayName ||
+												participantA.emojiName}
+											>{participantA.emojiId}</span
+										>
+										<span class="text-indigo-400 text-sm"
+											>↔</span
+										>
+										<span
+											class="text-2xl"
+											title={participantB.displayName ||
+												participantB.emojiName}
+											>{participantB.emojiId}</span
+										>
+										{#if pair.isTrio && participantC}
+											<span
+												class="text-indigo-400 text-sm"
+												>↔</span
+											>
+											<span
+												class="text-2xl"
+												title={participantC.displayName ||
+													participantC.emojiName}
+												>{participantC.emojiId}</span
+											>
+										{/if}
 									</div>
 								{/if}
-								<span class="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white"></span>
+							{/each}
+						</div>
+					{:else}
+						<div class="text-center py-8">
+							<div class="text-4xl mb-2">🎲</div>
+							<p class="text-slate-500">
+								No pairings yet. Click "Rematch Connected" to
+								create pairings.
+							</p>
+						</div>
+					{/if}
+				</section>
+
+				<!-- Participants Section -->
+				<section
+					class="bg-white/70 backdrop-blur-sm rounded-2xl shadow-lg p-6 lg:col-span-3"
+				>
+					<h2
+						class="font-semibold text-slate-800 mb-4 flex items-center gap-2"
+					>
+						<span class="text-xl">👥</span> Participants
+						<span class="text-sm font-normal text-slate-500"
+							>({summary.participants.length} total)</span
+						>
+					</h2>
+
+					{#if connectedParticipants.length > 0}
+						<div class="mb-6">
+							<h3
+								class="text-sm font-medium text-emerald-700 mb-3 flex items-center gap-2"
+							>
+								<span
+									class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"
+								></span>
+								Connected ({connectedParticipants.length})
+							</h3>
+							<div class="flex flex-wrap gap-3">
+								{#each connectedParticipants as p}
+									<div class="relative group">
+										<div
+											class="flex flex-col items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-2xl border-2 border-emerald-300 hover:border-emerald-400 hover:shadow-md transition-all"
+										>
+											<span class="text-3xl md:text-4xl"
+												>{p.emojiId}</span
+											>
+										</div>
+										{#if p.displayName}
+											<div
+												class="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg shadow-sm z-10"
+											>
+												{p.displayName}
+											</div>
+										{/if}
+										<span
+											class="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white shadow-sm"
+										></span>
+									</div>
+								{/each}
 							</div>
-						{/each}
-					</div>
-				</div>
-			{/if}
+						</div>
+					{/if}
 
-			{#if disconnectedParticipants.length > 0}
-				<div>
-					<h3 class="text-sm font-medium text-slate-500 mb-3">Disconnected ({disconnectedParticipants.length})</h3>
-					<div class="flex flex-wrap gap-3">
-						{#each disconnectedParticipants as p}
-							<div class="relative group">
-								<div class="flex flex-col items-center justify-center w-20 h-20 bg-slate-100 rounded-2xl border-2 border-slate-300 opacity-60">
-									<span class="text-4xl grayscale">{p.emojiId}</span>
-								</div>
-								<div class="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white px-2 py-1 rounded shadow-sm">
-									{#if p.displayName}{p.displayName} • {/if}{formatLastSeen(p.presence?.lastSeenAt)}
-								</div>
-								<span class="absolute -top-1 -right-1 w-3 h-3 bg-slate-400 rounded-full border-2 border-white"></span>
+					{#if disconnectedParticipants.length > 0}
+						<div>
+							<h3
+								class="text-sm font-medium text-slate-500 mb-3 flex items-center gap-2"
+							>
+								<span class="w-2 h-2 bg-slate-400 rounded-full"
+								></span>
+								Disconnected ({disconnectedParticipants.length})
+							</h3>
+							<div class="flex flex-wrap gap-3">
+								{#each disconnectedParticipants as p}
+									<div class="relative group">
+										<div
+											class="flex flex-col items-center justify-center w-16 h-16 md:w-20 md:h-20 bg-slate-100 rounded-2xl border-2 border-slate-200 opacity-60"
+										>
+											<span
+												class="text-3xl md:text-4xl grayscale"
+												>{p.emojiId}</span
+											>
+										</div>
+										<div
+											class="absolute -bottom-7 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg shadow-sm z-10"
+										>
+											{#if p.displayName}{p.displayName} •
+											{/if}{formatLastSeen(
+												p.presence?.lastSeenAt,
+											)}
+										</div>
+										<span
+											class="absolute -top-1 -right-1 w-3 h-3 bg-slate-400 rounded-full border-2 border-white shadow-sm"
+										></span>
+									</div>
+								{/each}
 							</div>
-						{/each}
-					</div>
-				</div>
-			{/if}
+						</div>
+					{/if}
 
-			{#if connectedParticipants.length === 0 && disconnectedParticipants.length === 0}
-				<p class="text-slate-500 text-sm">No participants yet.</p>
-			{/if}
-		</section>
-	</div>
-
-	<!-- Toast Notification -->
-	{#if toastVisible}
-		<div class="fixed bottom-6 right-6 z-50 animate-slide-up">
-			<div class="rounded-lg shadow-lg px-6 py-4 flex items-center gap-3 {toastType === 'success' ? 'bg-emerald-600' : toastType === 'error' ? 'bg-red-600' : 'bg-amber-500'} text-white">
-				{#if toastType === 'success'}
-					<span class="text-xl">✓</span>
-				{:else if toastType === 'error'}
-					<span class="text-xl">✗</span>
-				{:else}
-					<span class="text-xl">⚠</span>
-				{/if}
-				<span class="font-medium">{toastMessage}</span>
+					{#if connectedParticipants.length === 0 && disconnectedParticipants.length === 0}
+						<div class="text-center py-8">
+							<div class="text-4xl mb-2">🦗</div>
+							<p class="text-slate-500">
+								No participants yet. Share the join link to get
+								started!
+							</p>
+						</div>
+					{/if}
+				</section>
 			</div>
-		</div>
-	{/if}
-{:else}
-	<p>Loading...</p>
-{/if}
+
+			<!-- Toast Notification -->
+			{#if toastVisible}
+				<div class="fixed bottom-6 right-6 z-50 animate-slide-up">
+					<div
+						class="rounded-xl shadow-lg px-6 py-4 flex items-center gap-3 backdrop-blur-sm {toastType ===
+						'success'
+							? 'bg-emerald-600/90'
+							: toastType === 'error'
+								? 'bg-red-600/90'
+								: 'bg-amber-500/90'} text-white"
+					>
+						{#if toastType === "success"}
+							<span class="text-xl">✓</span>
+						{:else if toastType === "error"}
+							<span class="text-xl">✗</span>
+						{:else}
+							<span class="text-xl">⚠</span>
+						{/if}
+						<span class="font-medium">{toastMessage}</span>
+					</div>
+				</div>
+			{/if}
+		{:else}
+			<!-- Loading State -->
+			<div class="min-h-screen flex flex-col items-center justify-center">
+				<div class="text-6xl mb-4 animate-bounce">🔄</div>
+				<p class="text-slate-600 font-medium">Loading dashboard...</p>
+			</div>
+		{/if}
+	</div>
+</div>
 
 <style>
 	@keyframes slide-up {
@@ -320,6 +505,7 @@
 			opacity: 1;
 		}
 	}
+
 	.animate-slide-up {
 		animation: slide-up 0.3s ease-out;
 	}

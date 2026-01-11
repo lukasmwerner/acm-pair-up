@@ -131,6 +131,10 @@
 	});
 </script>
 
+<svelte:head>
+	<title>{summary?.event.name || 'Event'} - ACM Pair Up</title>
+</svelte:head>
+
 {#if summary}
 	<!-- Top overlay: self emoji -->
 	<div class="fixed top-3 inset-x-0 z-20 flex justify-center">
