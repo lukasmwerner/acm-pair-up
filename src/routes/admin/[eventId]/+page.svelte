@@ -182,9 +182,9 @@
 </svelte:head>
 
 <div
-	class="fixed inset-0 overflow-hidden bg-gradient-to-br from-slate-100 via-indigo-50 to-purple-100"
+	class="fixed inset-0 overflow-y-auto bg-gradient-to-br from-slate-100 via-indigo-50 to-purple-100"
 >
-	<div class="relative z-10 min-h-screen p-4 md:p-6 overflow-y-auto">
+	<div class="relative z-10 min-h-screen p-4 md:p-6">
 		{#if summary}
 			<!-- Header -->
 			<header
@@ -245,46 +245,40 @@
 							</div>
 						</div>
 
-						<div class="flex gap-2">
+						<div class="flex flex-col gap-3">
 							<a
-								class="flex-1 px-3 py-2 bg-emerald-600 text-white text-sm font-medium rounded-xl text-center hover:bg-emerald-700 transition-all"
-								target="_blank"
-								rel="noreferrer"
-								href={joinUrl}
-							>
-								Open
-							</a>
-							<a
-								class="flex-1 px-3 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl text-center hover:bg-indigo-700 transition-all"
+								class="w-full px-4 py-3 bg-indigo-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:scale-[1.02] transition-all text-center"
 								target="_blank"
 								rel="noreferrer"
 								href={`${joinUrl}&qr=1`}
 							>
 								QR Code
 							</a>
-						</div>
-
-						<button
-							class="w-full px-4 py-3 bg-purple-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 relative overflow-hidden"
-							disabled={loading || rematchCooldown > 0}
-							on:click={rematchConnected}
-						>
-							<span class="relative z-10">
+							<button
+								class="w-full px-4 py-3 bg-purple-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 relative overflow-hidden"
+								disabled={loading || rematchCooldown > 0}
+								on:click={rematchConnected}
+							>
+								<span class="relative z-10">
+									{#if rematchCooldown > 0}
+										Wait {Math.ceil(
+											rematchCooldown / 1000,
+										)}s
+									{:else if loading}
+										Creating pairs...
+									{:else}
+										Rematch Connected
+									{/if}
+								</span>
 								{#if rematchCooldown > 0}
-									Wait {Math.ceil(rematchCooldown / 1000)}s
-								{:else if loading}
-									Creating pairs...
-								{:else}
-									Rematch Connected
+									<div
+										class="absolute inset-0 bg-indigo-800/50 transition-all"
+										style="width: {100 -
+											rematchCooldown / 10}%"
+									></div>
 								{/if}
-							</span>
-							{#if rematchCooldown > 0}
-								<div
-									class="absolute inset-0 bg-indigo-800/50 transition-all"
-									style="width: {100 - rematchCooldown / 10}%"
-								></div>
-							{/if}
-						</button>
+							</button>
+						</div>
 					</div>
 				</section>
 

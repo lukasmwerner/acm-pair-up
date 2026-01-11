@@ -11,13 +11,12 @@
 	let showForm = false;
 	let joining = false;
 	let formCode = '';
-	let formName = '';
 	let pageTitle = 'Join Event - ACM Pair Up';
 
-	async function handleJoin(eventId: string, code: string, displayName: string) {
+	async function handleJoin(eventId: string, code: string) {
 		joining = true;
 		errorMsg = '';
-		const res = await fetch(`/api/events/${eventId}/join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, displayName }) });
+		const res = await fetch(`/api/events/${eventId}/join`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
 		if (!res.ok) {
 			errorMsg = 'Join failed. Check your event code.';
 			joining = false;
@@ -34,7 +33,22 @@
 			errorMsg = 'Please enter an event code';
 			return;
 		}
-		await handleJoin(formCode.trim(), formCode.trim(), formName.trim());
+		const code = formCode.trim().toUpperCase();
+
+		// Look up event by code
+		const eventsRes = await fetch('/api/events');
+		if (!eventsRes.ok) {
+			errorMsg = 'Failed to connect. Please try again.';
+			return;
+		}
+		const eventsData = await eventsRes.json();
+		const event = eventsData.events.find((e: any) => e.code === code);
+		if (!event) {
+			errorMsg = 'Invalid event code. Please check and try again.';
+			return;
+		}
+
+		await handleJoin(event.id, code);
 	}
 
 	onMount(async () => {
@@ -51,19 +65,18 @@
 		const url = new URL(location.href);
 		const eventId = url.searchParams.get('e') || url.searchParams.get('event') || '';
 		const code = url.searchParams.get('code') || url.searchParams.get('c') || '';
-		const displayName = url.searchParams.get('name') || '';
 		const qr = url.searchParams.get('qr') || '';
 		if (!eventId || !code) {
 			showForm = true;
 			return;
 		}
-		joinUrl = `${location.origin}/join?e=${encodeURIComponent(eventId)}&code=${encodeURIComponent(code)}${displayName ? `&name=${encodeURIComponent(displayName)}` : ''}`;
+		joinUrl = `${location.origin}/join?e=${encodeURIComponent(eventId)}&code=${encodeURIComponent(code)}`;
 		if (qr) {
 			qrMode = true;
 			pageTitle = 'Scan to Join - ACM Pair Up';
 			return;
 		}
-		await handleJoin(eventId, code, displayName);
+		await handleJoin(eventId, code);
 	});
 </script>
 
@@ -136,7 +149,7 @@
 				<p class="text-slate-600 text-center mb-6">Enter the code from your organizer</p>
 
 				<form on:submit|preventDefault={handleFormSubmit}>
-					<div class="mb-4">
+					<div class="mb-6">
 						<label for="code" class="block text-sm font-medium text-slate-700 mb-2">
 							Event Code
 						</label>
@@ -144,22 +157,9 @@
 							type="text"
 							id="code"
 							bind:value={formCode}
-							class="w-full px-4 py-3 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-							placeholder="Enter event code"
-							disabled={joining}
-						/>
-					</div>
-
-					<div class="mb-6">
-						<label for="name" class="block text-sm font-medium text-slate-700 mb-2">
-							Your Name <span class="text-slate-400 font-normal">(optional)</span>
-						</label>
-						<input
-							type="text"
-							id="name"
-							bind:value={formName}
-							class="w-full px-4 py-3 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-							placeholder="How should we call you?"
+							class="w-full px-4 py-3 border border-slate-200 rounded-xl bg-white/50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all uppercase text-center text-xl tracking-widest font-semibold"
+							placeholder="ABCD"
+							maxlength="4"
 							disabled={joining}
 						/>
 					</div>
