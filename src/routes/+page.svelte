@@ -1,9 +1,37 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount } from "svelte";
 
-	const EMOJIS = ['🐶', '🐱', '🐼', '🦊', '🦁', '🐸', '🐵', '🐰', '🐻', '🐨', '🐯', '🦄', '🐙', '🦋', '🌸', '🌻', '🍀', '🌈', '🔥', '⭐'];
+	const EMOJIS = [
+		"🐶",
+		"🐱",
+		"🐼",
+		"🦊",
+		"🦁",
+		"🐸",
+		"🐵",
+		"🐰",
+		"🐻",
+		"🐨",
+		"🐯",
+		"🦄",
+		"🐙",
+		"🦋",
+		"🌸",
+		"🌻",
+		"🍀",
+		"🌈",
+		"🔥",
+		"⭐",
+	];
 
-	let floatingEmojis: Array<{emoji: string, x: number, y: number, size: number, delay: number, duration: number}> = [];
+	let floatingEmojis: Array<{
+		emoji: string;
+		x: number;
+		y: number;
+		size: number;
+		delay: number;
+		duration: number;
+	}> = [];
 
 	onMount(() => {
 		floatingEmojis = Array.from({ length: 12 }, () => ({
@@ -12,7 +40,7 @@
 			y: Math.random() * 100,
 			size: 1.5 + Math.random() * 2,
 			delay: Math.random() * 5,
-			duration: 8 + Math.random() * 6
+			duration: 8 + Math.random() * 6,
 		}));
 	});
 </script>
@@ -21,7 +49,9 @@
 	<title>ACM Pair Up - Speed Friending Made Easy</title>
 </svelte:head>
 
-<div class="fixed inset-0 overflow-hidden bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
+<div
+	class="fixed inset-0 overflow-hidden bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100"
+>
 	<!-- Floating emojis background -->
 	{#each floatingEmojis as emoji}
 		<div
@@ -39,20 +69,25 @@
 	{/each}
 
 	<!-- Main content -->
-	<div class="relative z-10 min-h-screen flex flex-col items-center justify-center p-6">
+	<div
+		class="relative z-10 min-h-screen flex flex-col items-center justify-center p-6"
+	>
 		<!-- Hero emoji cluster -->
 		<div class="text-6xl md:text-8xl mb-6 flex gap-2 hero-emoji">
 			<span class="animate-wave" style="animation-delay: 0s;">🤝</span>
 		</div>
 
 		<!-- Title -->
-		<h1 class="text-4xl md:text-5xl font-bold text-slate-800 text-center mb-3">
+		<h1
+			class="text-4xl md:text-5xl font-bold text-slate-800 text-center mb-3"
+		>
 			ACM Pair Up
 		</h1>
 
 		<!-- Subtitle -->
 		<p class="text-lg md:text-xl text-slate-600 text-center max-w-md mb-10">
-			Meet new people through random 1:1 pairings at speed friending events
+			Meet new people through random 1:1 pairings at speed friending
+			events
 		</p>
 
 		<!-- CTA Button -->
@@ -62,8 +97,18 @@
 		>
 			<span class="flex items-center gap-2">
 				Join an Event
-				<svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+				<svg
+					class="w-5 h-5 group-hover:translate-x-1 transition-transform"
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M13 7l5 5m0 0l-5 5m5-5H6"
+					/>
 				</svg>
 			</span>
 		</a>
@@ -72,25 +117,13 @@
 		<p class="mt-8 text-sm text-slate-500 text-center">
 			Enter your event code to get matched with a partner
 		</p>
-
-		<!-- Feature pills -->
-		<div class="mt-12 flex flex-wrap justify-center gap-3">
-			<div class="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full text-sm text-slate-600 shadow-sm">
-				Real-time matching
-			</div>
-			<div class="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full text-sm text-slate-600 shadow-sm">
-				No app required
-			</div>
-			<div class="px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full text-sm text-slate-600 shadow-sm">
-				Unique emoji IDs
-			</div>
-		</div>
 	</div>
 </div>
 
 <style>
 	@keyframes float {
-		0%, 100% {
+		0%,
+		100% {
 			transform: translateY(0) rotate(0deg);
 		}
 		50% {
@@ -99,7 +132,8 @@
 	}
 
 	@keyframes wave {
-		0%, 100% {
+		0%,
+		100% {
 			transform: rotate(0deg);
 		}
 		25% {
