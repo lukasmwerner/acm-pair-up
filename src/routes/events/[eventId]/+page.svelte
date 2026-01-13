@@ -21,7 +21,7 @@
 	};
 
 	let summary: Summary | null = null;
-	let partner: { emojiId: string; emojiName: string; displayName?: string } | null = null;
+	let groupMembers: Array<{ emojiId: string; emojiName: string; displayName?: string }> = [];
 	let my = { id: "", emojiId: "", emojiName: "", token: "" };
 	let cleanupHeartbeat: (() => void) | null = null;
 	let disconnectSSE: (() => void) | null = null;
@@ -36,8 +36,15 @@
 		return `hsl(${hue}, 70%, 90%)`;
 	}
 
-	let partnerBg = "transparent";
-	$: partnerBg = partner ? bgFromEmoji(partner.emojiId) : "transparent";
+	function bgFromGroup(members: typeof groupMembers) {
+		if (members.length === 0) return "transparent";
+		if (members.length === 1) return bgFromEmoji(members[0].emojiId);
+		// For larger groups, blend hues or use a neutral gradient
+		return "linear-gradient(135deg, hsl(220, 70%, 90%), hsl(280, 70%, 90%))";
+	}
+
+	let groupBg = "transparent";
+	$: groupBg = bgFromGroup(groupMembers);
 
 	async function fetchState(eventId: string) {
 		const res = await fetch(`/api/events/${eventId}/state`);
@@ -49,30 +56,29 @@
 		if (!s?.participantId) return;
 		const res = await fetch(`/api/events/${eventId}/pairings/current`);
 		const data = await res.json();
-		partner = null;
+		groupMembers = [];
 		if (data.pairings) {
 			for (const p of data.pairings) {
-				if (p.aParticipantId === s.participantId) {
-					const other = summary?.participants.find(
-						(x) => x.id === p.bParticipantId,
-					);
-					if (other)
-						partner = {
-							emojiId: other.emojiId,
-							emojiName: other.emojiName,
-							displayName: other.displayName,
-						};
-				}
-				if (p.bParticipantId === s.participantId) {
-					const other = summary?.participants.find(
-						(x) => x.id === p.aParticipantId,
-					);
-					if (other)
-						partner = {
-							emojiId: other.emojiId,
-							emojiName: other.emojiName,
-							displayName: other.displayName,
-						};
+				// Check if current user is in this group
+				const memberIds = [
+					p.aParticipantId,
+					p.bParticipantId,
+					p.cParticipantId,
+					p.dParticipantId,
+				].filter(Boolean);
+
+				if (memberIds.includes(s.participantId)) {
+					// Found our group - get all other members
+					groupMembers = memberIds
+						.filter((id) => id !== s.participantId)
+						.map((id) => summary?.participants.find((x) => x.id === id))
+						.filter((p): p is NonNullable<typeof p> => p !== null && p !== undefined)
+						.map((p) => ({
+							emojiId: p.emojiId,
+							emojiName: p.emojiName,
+							displayName: p.displayName,
+						}));
+					break;
 				}
 			}
 		}
@@ -143,19 +149,56 @@
 		</div>
 	</div>
 
-	<!-- Fullscreen partner area with derived background -->
+	<!-- Fullscreen group area with derived background -->
 	<section
-		class="fixed inset-0 z-10 flex items-center justify-center"
-		style="background-color: {partnerBg};"
+		class="fixed inset-0 z-10 flex items-center justify-center p-4"
+		style="background: {groupBg};"
 	>
-		{#if partner}
-			<div class="text-center">
-				<div class="text-[20vw] leading-none md:text-[15rem]">
-					{partner.emojiId}
-				</div>
-				{#if partner.displayName}
-					<div class="mt-6 text-slate-800 text-3xl font-semibold">
-						{partner.displayName}
+		{#if groupMembers.length > 0}
+			<div class="text-center w-full max-w-6xl">
+				{#if groupMembers.length === 1}
+					<!-- Single partner (pair) -->
+					<div class="text-[20vw] leading-none md:text-[15rem]">
+						{groupMembers[0].emojiId}
+					</div>
+					{#if groupMembers[0].displayName}
+						<div class="mt-6 text-slate-800 text-3xl font-semibold">
+							{groupMembers[0].displayName}
+						</div>
+					{/if}
+
+				{:else if groupMembers.length === 2}
+					<!-- Group of 3: side-by-side -->
+					<div class="flex items-center justify-center gap-8 flex-wrap">
+						{#each groupMembers as member}
+							<div class="text-center">
+								<div class="text-[15vw] md:text-[10rem]">
+									{member.emojiId}
+								</div>
+								{#if member.displayName}
+									<div class="mt-4 text-slate-800 text-2xl font-semibold">
+										{member.displayName}
+									</div>
+								{/if}
+							</div>
+						{/each}
+					</div>
+
+				{:else if groupMembers.length === 3}
+					<!-- Group of 4: 2x2 grid -->
+					<div class="grid grid-cols-1 sm:grid-cols-2 gap-8 max-w-4xl mx-auto">
+						{#each groupMembers as member}
+							<div class="text-center">
+								<div class="text-[12vw] md:text-[8rem]">
+									{member.emojiId}
+								</div>
+								{#if member.displayName}
+									<div class="mt-3 text-slate-800 text-xl font-semibold">
+										{member.displayName}
+									</div>
+								{/if}
+							</div>
+						{/each}
 					</div>
 				{/if}
 			</div>

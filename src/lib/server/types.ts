@@ -53,6 +53,8 @@ export interface Pairing {
   bParticipantId: ID;
   isTrio?: boolean;
   cParticipantId?: ID | null;
+  dParticipantId?: ID | null; // 4th participant for groups of 4
+  groupSize?: 2 | 3 | 4; // explicit group size
 }
 
 export interface AvoidanceHistoryKey {

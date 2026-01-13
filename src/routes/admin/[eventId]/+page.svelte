@@ -23,6 +23,8 @@
 		bParticipantId: string;
 		isTrio?: boolean;
 		cParticipantId?: string | null;
+		dParticipantId?: string | null;
+		groupSize?: 2 | 3 | 4;
 	};
 
 	let summary: Summary | null = null;
@@ -34,6 +36,7 @@
 	let currentTime = Date.now();
 	let lastRematchTime = 0;
 	let rematchCooldown = 0;
+	let selectedGroupSize: 2 | 4 = 2;
 
 	// Toast notification state
 	let toastMessage = "";
@@ -115,7 +118,7 @@
 			{
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ adminKey }),
+				body: JSON.stringify({ adminKey, groupSize: selectedGroupSize }),
 			},
 		);
 		loading = false;
@@ -245,6 +248,38 @@
 							</div>
 						</div>
 
+						<div>
+							<label
+								class="block text-sm font-medium text-slate-700 mb-2"
+							>
+								Group Size
+							</label>
+							<div class="flex gap-2">
+								<button
+									type="button"
+									class="flex-1 px-4 py-2 rounded-lg border-2 transition-all {selectedGroupSize ===
+									2
+										? 'border-purple-600 bg-purple-50 text-purple-700 font-semibold'
+										: 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}"
+									on:click={() =>
+										(selectedGroupSize = 2)}
+								>
+									Pairs (2)
+								</button>
+								<button
+									type="button"
+									class="flex-1 px-4 py-2 rounded-lg border-2 transition-all {selectedGroupSize ===
+									4
+										? 'border-purple-600 bg-purple-50 text-purple-700 font-semibold'
+										: 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'}"
+									on:click={() =>
+										(selectedGroupSize = 4)}
+								>
+									Groups (4)
+								</button>
+							</div>
+						</div>
+
 						<div class="flex flex-col gap-3">
 							<a
 								class="w-full px-4 py-3 bg-indigo-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:scale-[1.02] transition-all text-center"
@@ -312,36 +347,41 @@
 											(p) => p.id === pair.cParticipantId,
 										)
 									: null}
-								{#if participantA && participantB}
+								{@const participantD = pair.dParticipantId
+									? summary.participants.find(
+											(p) => p.id === pair.dParticipantId,
+										)
+									: null}
+								{@const groupMembers = [
+									participantA,
+									participantB,
+									participantC,
+									participantD,
+								].filter((m): m is NonNullable<typeof m> => m !== null && m !== undefined)}
+								{#if groupMembers.length >= 2}
 									<div
 										class="flex items-center gap-2 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-full px-4 py-2 border border-indigo-200/50 shadow-sm"
 									>
-										<span
-											class="text-2xl"
-											title={participantA.displayName ||
-												participantA.emojiName}
-											>{participantA.emojiId}</span
-										>
-										<span class="text-indigo-400 text-sm"
-											>↔</span
-										>
-										<span
-											class="text-2xl"
-											title={participantB.displayName ||
-												participantB.emojiName}
-											>{participantB.emojiId}</span
-										>
-										{#if pair.isTrio && participantC}
-											<span
-												class="text-indigo-400 text-sm"
-												>↔</span
-											>
+										{#each groupMembers as member, i}
+											{#if i > 0}
+												<span
+													class="text-indigo-400 text-sm"
+													>↔</span
+												>
+											{/if}
 											<span
 												class="text-2xl"
-												title={participantC.displayName ||
-													participantC.emojiName}
-												>{participantC.emojiId}</span
+												title={member.displayName ||
+													member.emojiName}
+												>{member.emojiId}</span
 											>
+										{/each}
+										{#if pair.groupSize}
+											<span
+												class="ml-1 text-xs text-purple-600 font-semibold"
+											>
+												({pair.groupSize})
+											</span>
 										{/if}
 									</div>
 								{/if}
